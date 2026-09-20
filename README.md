@@ -1,31 +1,25 @@
-# Agent Review Graph 🕵️‍♂️🕸️
+# Agent Review Graph
 
-**The Ultimate Linter and Semantic Contradiction Detector for AI Agent Skills.**
+A CLI linter and semantic contradiction detector for AI agent skill files, powered by TypeSafe AI Jev.
 
-AgentReviewGraph is a developer-centric CLI tool that acts as a policy linter for your AI agents. It parses your agent Markdown skill files, maps them into a strictly-typed **Semantic Knowledge Graph**, and uses **TypeSafe AI Jev** to detect critical contradictions before they reach production.
+Agent Review Graph parses Markdown skill files used by AI agents, constructs a typed Semantic Knowledge Graph, and evaluates rule pairs for semantic contradictions before deployment.
 
 ## Features
 
-| Feature | Description |
-|---|---|
-| 🕸️ **Semantic Knowledge Graph** | Parses agent skills into a typed graph of Skill Nodes and Constraint Edges. Graph generation is fully independent of Jev — it works offline too. |
-| 🧠 **Jev-Powered Contradiction Detection** | Uses TypeSafe AI's Jev System One engine to semantically evaluate constraints and flag conflicts with a severity score (0.0–1.0). |
-| 🏷️ **Canonical Domain Tagging** | Jev tags every constraint with a Domain (e.g., `Security & Auth`, `Billing & Finance`). Only same-domain constraints are compared, eliminating millions of wasteful API calls at scale. |
-| ⚡ **Adaptive Batch Requests** | Batches up to 10 constraint pairs into a single Jev request. If a batch fails with a 429, the engine recursively splits the batch in half and retries — self-healing under load. |
-| 📊 **Interactive HTML Report** | Generates a stunning flamegraph dashboard highlighting all discovered conflict hotspots with Jev severity scores. |
-| 🛑 **CI/CD Gatekeeper** | Fails your pipeline (`exit 1`) if critical contradictions are found. |
-| 🤖 **Orchestrator Ready** | Exports a `knowledge_graph.json` that your master routing agent can ingest dynamically. |
-| 🔌 **Offline Fallback** | If no API key is present, the tool falls back to fast local heuristics so you can still test your pipelines. |
+- **Semantic Knowledge Graph**: Parses agent Markdown files into a graph of skill nodes and constraint edges. Works offline without external API dependencies.
+- **Semantic Contradiction Detection**: Uses TypeSafe AI's Jev engine to evaluate rule pairs for semantic conflicts with severity scoring (0.0 to 1.0).
+- **Canonical Domain Pre-Filtering**: Classifies constraints into logical domains (e.g. `Security & Auth`, `Billing & Finance`, `Web Search`). Compares only rules sharing the same domain, reducing API calls by over 90%.
+- **Adaptive Batching**: Groups constraint pairs into batch requests, automatically splitting batches under rate limits.
+- **HTML Report Generation**: Generates an interactive HTML flamegraph dashboard displaying rule conflicts, severity scores, and Jev reasoning.
+- **CI/CD Integration**: Supports `--fail-on-contradiction` to exit with code 1, allowing automated pipeline gating on pull requests or pre-commit checks.
+- **JSON Knowledge Graph Export**: Exports `knowledge_graph.json` for consumption by routing agents or external tooling.
 
-## How the Knowledge Graph Works
+## How It Works
 
-The graph is built in **two independent phases**:
+Knowledge graph construction occurs in two phases:
 
-1. **Phase 1 — Structural Graph (Pure Python, no Jev required):**
-   The parser reads every Markdown skill file and immediately builds a graph of `SkillNode` and `ConstraintEdge` objects. This skeleton graph is always generated.
-
-2. **Phase 2 — Semantic Enrichment (Jev powered):**
-   Jev enriches the graph by: (a) tagging each constraint with a Domain using `Choice`, (b) batching same-domain pairs and scoring their contradiction severity using `Score`, (c) drawing red `Contradiction Edges` on the graph for any pair exceeding the threshold.
+1. **Structural Analysis (Local)**: Parses Markdown files to extract frontmatter metadata, headers, bullet points, and rule constraints. Constructs local `SkillNode` and `ConstraintEdge` structures without network calls.
+2. **Semantic Enrichment (Jev Engine)**: Categorizes constraints by domain and evaluates same-domain constraint pairs for semantic contradictions, populating severity scores and conflict edges.
 
 ## Installation
 
@@ -33,28 +27,18 @@ The graph is built in **two independent phases**:
 pip install agent-review-graph
 ```
 
-## Usage
+## Quickstart
 
 ```bash
-# Basic run (uses local heuristic fallback if no API key)
+# Analyze a skills directory (local fallback mode if no API key is set)
 agent-review ./skills --output-dir ./reports
 
-# Full live Jev run with configurable sensitivity
-agent-review ./skills --output-dir ./reports --threshold 0.8 --verbose
-
-# CI/CD strict mode — fails the pipeline if contradictions are found
-agent-review ./skills --output-dir ./reports --fail-on-contradiction --threshold 0.9
-```
-
-## Live TypeSafe AI Integration
-
-Export your API key to unlock full semantic analysis:
-
-```bash
+# Run with Jev semantic evaluation enabled
 export TYPESAFE_API_KEY="jev_sk_..."
-export TYPESAFE_BASE_URL="https://your-vercel-gateway.vercel.app"  # Optional
-
 agent-review ./skills --output-dir ./reports --threshold 0.8 --verbose
+
+# Run in strict mode (exits 1 on contradiction)
+agent-review ./skills --output-dir ./reports --fail-on-contradiction --threshold 0.8
 ```
 
 ## CLI Reference
@@ -62,21 +46,22 @@ agent-review ./skills --output-dir ./reports --threshold 0.8 --verbose
 | Flag | Description | Default |
 |---|---|---|
 | `target` | Path to a skill file or directory | Required |
-| `--output-dir` | Directory for the HTML report and JSON graph | `./reports` |
-| `--threshold` | Contradiction severity threshold (0.0–1.0). Lower = more sensitive. | `0.0` |
-| `--fail-on-contradiction` | Exit with code 1 if any contradiction is found | `false` |
-| `--verbose` | Enable debug logging for every Jev payload and response | `false` |
+| `--output-dir` | Output directory for the HTML report and JSON graph | `./reports` |
+| `--threshold` | Severity score threshold for flagging contradictions (0.0–1.0) | `0.0` |
+| `--fail-on-contradiction` | Exit with status code 1 if any contradiction is detected | `false` |
+| `--verbose` | Enable verbose logging for API payloads and internal events | `false` |
 
-## Scalability: O(1) Domain Pre-Filtering
+## Domain Pre-Filtering Performance
 
-Without pre-filtering, comparing N rules requires O(N²) Jev API calls. For an enterprise with 2,500 rules, that is over 3 million comparisons!
+Comparing $N$ rules naively requires $O(N^2)$ pairwise checks. For 2,500 rules, this would require over 3 million API evaluations.
 
-**Domain Tagging solves this:** Jev tags each constraint at extraction time with a predefined domain (e.g., `Security & Auth`). The engine then uses an O(1) dictionary lookup to only compare constraints sharing the exact same domain, reducing comparisons by over 90%.
+Agent Review Graph assigns each constraint to a canonical domain at extraction time. An $O(1)$ lookup isolates comparisons strictly to same-domain rule pairs, reducing comparison complexity by over 90%.
 
-## Usage (GitHub Action)
+## GitHub Action Integration
 
 ```yaml
 name: Agent Policy Linter
+
 on: [pull_request]
 
 jobs:
@@ -85,7 +70,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Run AgentReviewGraph
+      - name: Run Agent Review Graph
         uses: agent-review-graph/action@v1
         with:
           target: './skills'
@@ -95,3 +80,7 @@ jobs:
         env:
           TYPESAFE_API_KEY: ${{ secrets.TYPESAFE_API_KEY }}
 ```
+
+## License
+
+Licensed under the PolyForm Noncommercial License 1.0.0. See [LICENSE](LICENSE) for details.
