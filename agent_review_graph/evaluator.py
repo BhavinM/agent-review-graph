@@ -48,6 +48,7 @@ class Constraint(BaseModel):
     type: str = "constraint"
     rule: str
     source_chunk_id: str
+    domain_tag: str
 
 class ContradictionEdge(BaseModel):
     source_id: str
@@ -65,11 +66,10 @@ class KnowledgeGraph(BaseModel):
 # Core Evaluator Functions (Live Jev vs Local Mock)
 # ---------------------------------------------------------
 
-async def jev_extract_constraints(chunk_text: str) -> List[str]:
+async def jev_extract_constraints(chunk_text: str) -> List[Dict[str, str]]:
     """
-    Extracts actionable constraints from a raw text chunk.
+    Extracts actionable constraints and tags their domain.
     If TYPESAFE_API_KEY is set, uses the TypeSafe Jev 'Choice' primitive.
-    Otherwise, falls back to a fast local heuristic.
     """
     if jev_client:
         # LIVE JEV INTEGRATION
@@ -85,13 +85,24 @@ async def jev_extract_constraints(chunk_text: str) -> List[str]:
                         "General Description": None, 
                         "Trigger": None
                     }
+                ),
+                "domain_tag": Choice(
+                    instructions="Categorize the core domain of this constraint.",
+                    criteria={
+                        "Billing & Finance": None,
+                        "Security & Auth": None,
+                        "Web Search & Research": None,
+                        "Database & Storage": None,
+                        "General Interaction": None
+                    }
                 )
             }
         )
         ans = result.choices["classification"].choice
-        logger.debug(f"[JEV] Extraction result: {ans}")
+        domain = result.choices["domain_tag"].choice
+        logger.debug(f"[JEV] Extraction result: {ans}, Domain: {domain}")
         if ans == "Actionable Constraint":
-            return [f"Constraint: {chunk_text}"]
+            return [{"rule": f"Constraint: {chunk_text}", "domain": domain}]
         return []
         
     else:
@@ -100,9 +111,9 @@ async def jev_extract_constraints(chunk_text: str) -> List[str]:
         constraints = []
         text_lower = chunk_text.lower()
         if "never" in text_lower or "must not" in text_lower or "do not" in text_lower:
-            constraints.append(f"Constraint derived from: {chunk_text[:50]}...")
+            constraints.append({"rule": f"Constraint derived from: {chunk_text[:50]}...", "domain": "General Interaction"})
         if "always" in text_lower or "must" in text_lower or "required" in text_lower:
-            constraints.append(f"Requirement derived from: {chunk_text[:50]}...")
+            constraints.append({"rule": f"Requirement derived from: {chunk_text[:50]}...", "domain": "General Interaction"})
         return constraints
 
 async def jev_evaluate_batch(batch: List[Tuple[Any, Any]], threshold: float = 0.0) -> List[Dict[str, Any]]:
@@ -173,21 +184,19 @@ async def jev_evaluate_batch(batch: List[Tuple[Any, Any]], threshold: float = 0.
 
 def cluster_related_rules(constraints: List[Constraint]) -> List[tuple]:
     """
-    Groups related rules using a fast local clustering step 
-    before Jev evaluation to avoid O(N²) comparison explosion.
-    Uses a basic word overlap heuristic.
+    Groups related rules by Domain Tag using O(1) Lexical Indexing.
+    Only constraints sharing the exact same domain are paired.
     """
+    tag_groups = {}
+    for c in constraints:
+        tag_groups.setdefault(c.domain_tag, []).append(c)
+        
     pairs = []
-    # Simple word tokenization and stop-word removal could go here
-    for i in range(len(constraints)):
-        for j in range(i + 1, len(constraints)):
-            a_words = set(constraints[i].rule.lower().split())
-            b_words = set(constraints[j].rule.lower().split())
-            
-            # If they share at least one meaningful word, consider them a cluster candidate
-            intersection = a_words.intersection(b_words)
-            if len(intersection) > 2 or ("never" in a_words and "always" in b_words) or ("always" in a_words and "never" in b_words):
-                pairs.append((constraints[i], constraints[j]))
+    for tag, group in tag_groups.items():
+        # Only compare constraints within the exact same Domain
+        for i in range(len(group)):
+            for j in range(i + 1, len(group)):
+                pairs.append((group[i], group[j]))
     return pairs
 
 async def async_evaluate_skills(parsed_files: List[Dict[str, Any]], threshold: float = 0.0) -> Dict[str, Any]:
@@ -213,7 +222,7 @@ async def async_evaluate_skills(parsed_files: List[Dict[str, Any]], threshold: f
                 c_id = f"const_{node_id}_{i}_{len(node.constraints)}"
                 node.constraints.append(c_id)
                 
-                c_obj = Constraint(id=c_id, rule=ext, source_chunk_id=chunk.get('id', ''))
+                c_obj = Constraint(id=c_id, rule=ext["rule"], source_chunk_id=chunk.get('id', ''), domain_tag=ext["domain"])
                 all_constraints.append(c_obj)
                 graph.nodes.append(c_obj.model_dump())
                 
