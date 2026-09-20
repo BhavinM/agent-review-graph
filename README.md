@@ -1,4 +1,4 @@
-# AgentReviewGraph 🕵️‍♂️🕸️
+# Agent Review Graph 🕵️‍♂️🕸️
 
 **The Ultimate Linter and Semantic Contradiction Detector for AI Agent Skills.**
 
