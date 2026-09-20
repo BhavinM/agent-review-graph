@@ -7,7 +7,9 @@ This guide walks through every feature of the CLI from setup to a full live Jev 
 ## Phase 1: Setup
 
 ```bash
-cd /Users/bhavinmistry/Documents/Learning/JevLearning/agent-review-public
+# Clone the repo and install
+git clone https://github.com/BhavinM/agent-review-graph.git
+cd agent-review-graph
 
 # Install the CLI in editable mode
 pip install -e .

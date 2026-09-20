@@ -1,9 +1,0 @@
-pydantic
-pyyaml
-markdown-it-py
-jinja2
-typesafe-sdk>=0.7.0
-
-[dev]
-pytest
-pytest-asyncio

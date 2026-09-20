@@ -1,0 +1,34 @@
+# AgentReviewGraph — Git Ignore
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+*.egg
+dist/
+build/
+.eggs/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Environment / secrets — NEVER commit these
+.env
+.env.*
+*.env
+
+# Generated outputs — run `agent-review` to regenerate these locally
+demo_reports/
+reports/
+*.json
+*.html
+
+# macOS
+.DS_Store
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
