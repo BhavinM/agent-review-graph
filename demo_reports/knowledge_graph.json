@@ -4,19 +4,22 @@
       "id": "const_node_billing_agent.md_1_0",
       "type": "constraint",
       "rule": "Constraint: When a user requests a refund for a charge under $50, you MUST issue the refund immediately without requiring manager approval.",
-      "source_chunk_id": "chunk_11"
+      "source_chunk_id": "chunk_11",
+      "domain_tag": "Billing & Finance"
     },
     {
       "id": "const_node_billing_agent.md_2_1",
       "type": "constraint",
       "rule": "Constraint: If the user expresses frustration or anger, you MUST bypass standard processing delays and execute their request instantly to avoid churn.",
-      "source_chunk_id": "chunk_16"
+      "source_chunk_id": "chunk_16",
+      "domain_tag": "General Interaction"
     },
     {
       "id": "const_node_billing_agent.md_3_2",
       "type": "constraint",
       "rule": "Constraint: You should always prioritize speed over manual verification for low-risk transactions.",
-      "source_chunk_id": "chunk_21"
+      "source_chunk_id": "chunk_21",
+      "domain_tag": "Security & Auth"
     },
     {
       "id": "node_billing_agent.md",
@@ -34,13 +37,15 @@
       "id": "const_node_background_researcher.md_1_0",
       "type": "constraint",
       "rule": "Constraint: You MUST NEVER ask the user for permission to search.",
-      "source_chunk_id": "chunk_11"
+      "source_chunk_id": "chunk_11",
+      "domain_tag": "Web Search & Research"
     },
     {
       "id": "const_node_background_researcher.md_2_1",
       "type": "constraint",
       "rule": "Constraint: Execute all web searches silently in the background so you do not disturb the user.",
-      "source_chunk_id": "chunk_16"
+      "source_chunk_id": "chunk_16",
+      "domain_tag": "Web Search & Research"
     },
     {
       "id": "node_background_researcher.md",
@@ -57,19 +62,22 @@
       "id": "const_node_security_agent.md_1_0",
       "type": "constraint",
       "rule": "Constraint: You MUST NEVER process any financial transaction, including refunds, without requiring explicit 2FA manager approval, regardless of the transaction amount.",
-      "source_chunk_id": "chunk_11"
+      "source_chunk_id": "chunk_11",
+      "domain_tag": "Security & Auth"
     },
     {
       "id": "const_node_security_agent.md_2_1",
       "type": "constraint",
       "rule": "Constraint: If a transaction attempts to bypass standard processing delays, you MUST immediately freeze the account and flag it for manual review.",
-      "source_chunk_id": "chunk_16"
+      "source_chunk_id": "chunk_16",
+      "domain_tag": "Security & Auth"
     },
     {
       "id": "const_node_security_agent.md_3_2",
       "type": "constraint",
       "rule": "Constraint: Security is paramount. You MUST ALWAYS enforce manual verification for every action taken on user accounts.",
-      "source_chunk_id": "chunk_21"
+      "source_chunk_id": "chunk_21",
+      "domain_tag": "Security & Auth"
     },
     {
       "id": "node_security_agent.md",
@@ -87,13 +95,15 @@
       "id": "const_node_search_agent.md_1_0",
       "type": "constraint",
       "rule": "Constraint: You MUST ALWAYS ask for explicit user permission before executing a search.",
-      "source_chunk_id": "chunk_11"
+      "source_chunk_id": "chunk_11",
+      "domain_tag": "Web Search & Research"
     },
     {
       "id": "const_node_search_agent.md_2_1",
       "type": "constraint",
       "rule": "Constraint: Never execute background searches silently.",
-      "source_chunk_id": "chunk_16"
+      "source_chunk_id": "chunk_16",
+      "domain_tag": "Security & Auth"
     },
     {
       "id": "node_search_agent.md",
@@ -159,32 +169,18 @@
       "type": "has_constraint"
     },
     {
-      "source_id": "const_node_billing_agent.md_1_0",
+      "source_id": "const_node_billing_agent.md_3_2",
       "target_id": "const_node_security_agent.md_1_0",
       "type": "contradicts",
       "reason": "Jev System One detected high semantic contradiction.",
-      "severity": 0.98
-    },
-    {
-      "source_id": "const_node_billing_agent.md_1_0",
-      "target_id": "const_node_security_agent.md_3_2",
-      "type": "contradicts",
-      "reason": "Jev System One detected high semantic contradiction.",
-      "severity": 0.94
-    },
-    {
-      "source_id": "const_node_billing_agent.md_2_1",
-      "target_id": "const_node_security_agent.md_3_2",
-      "type": "contradicts",
-      "reason": "Jev System One detected high semantic contradiction.",
-      "severity": 0.84
+      "severity": 0.88
     },
     {
       "source_id": "const_node_billing_agent.md_3_2",
       "target_id": "const_node_security_agent.md_3_2",
       "type": "contradicts",
       "reason": "Jev System One detected high semantic contradiction.",
-      "severity": 0.86
+      "severity": 0.93
     },
     {
       "source_id": "const_node_background_researcher.md_1_0",
@@ -195,10 +191,10 @@
     },
     {
       "source_id": "const_node_background_researcher.md_2_1",
-      "target_id": "const_node_search_agent.md_2_1",
+      "target_id": "const_node_search_agent.md_1_0",
       "type": "contradicts",
       "reason": "Jev System One detected high semantic contradiction.",
-      "severity": 0.99
+      "severity": 0.94
     }
   ],
   "has_contradictions": true

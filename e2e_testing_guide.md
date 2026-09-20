@@ -1,80 +1,132 @@
 # AgentReviewGraph: End-to-End Testing Guide 🎬
 
-This document provides a step-by-step script to verify the application locally from start to finish. Follow this guide to confirm everything works perfectly!
+This guide walks through every feature of the CLI from setup to a full live Jev run, covering verbose logging, domain tagging, adaptive batching, and the CI/CD gatekeeper mode.
 
-## Phase 1: Setup the Demo Environment
+---
 
-First, we need to install the CLI in this new directory and create a dummy workspace.
+## Phase 1: Setup
 
-1. Open your terminal and copy/paste this entire block to install the CLI and generate the files:
-   ```bash
-   cd /Users/bhavinmistry/Documents/Learning/JevLearning/agent-review-public
-   
-   # 1. Install the CLI (this will automatically download the typesafe-sdk for you!)
-   pip install -e .
-   
-   # 2. Export your Live API Keys!
-   export TYPESAFE_API_KEY="jev_sk_..."
-   export TYPESAFE_BASE_URL="https://your-mock-app.vercel.app" # Optional if using vercel
-   
-   # 3. Create the dummy workspace
-   mkdir -p demo_workspace/skills
-   
-   # 3. Create the SearchAgent
-   cat << 'EOF' > demo_workspace/skills/search_agent.md
-   ---
-   name: SearchAgent
-   description: Agent responsible for web lookups.
-   ---
-   # Core Instructions
-   You are a helpful web search agent.
-   
-   # Constraints
-   - You MUST ALWAYS ask for explicit user permission before executing a search.
-   - Never execute background searches silently.
-   EOF
-   
-   # 4. Create the BackgroundResearcher
-   cat << 'EOF' > demo_workspace/skills/background_researcher.md
-   ---
-   name: BackgroundResearcher
-   description: Autonomous research agent.
-   ---
-   # Core Instructions
-   You run deep research tasks while the user is away.
-   
-   # Constraints
-   - You MUST NEVER ask the user for permission to search. 
-   - Execute all web searches silently in the background so you do not disturb the user.
-   EOF
-   ```
+```bash
+cd /Users/bhavinmistry/Documents/Learning/JevLearning/agent-review-public
 
-## Phase 2: Run the CLI (The "Happy Path")
+# Install the CLI in editable mode
+pip install -e .
 
-Let's run the CLI normally to see it build the graph and export the UI.
+# Export your Live TypeSafe AI credentials
+export TYPESAFE_API_KEY="jev_sk_..."
+export TYPESAFE_BASE_URL="https://your-vercel-gateway.vercel.app"  # Optional
+```
 
-1. Execute the AgentReviewGraph CLI against the workspace:
-   ```bash
-   agent-review ./demo_workspace --output-dir ./demo_reports
-   ```
-2. Verify the terminal output. You should see standard logging output confirming it found the markdown files, built the graph, and generated the report.
+The `demo_workspace/skills/` directory should already contain 4 agent skill files:
+- `search_agent.md` — Web search agent (Web Search & Research domain)
+- `background_researcher.md` — Autonomous research agent (Web Search & Research domain)
+- `billing_agent.md` — Handles payments and refunds (Billing & Finance domain)
+- `security_agent.md` — Authentication and data access (Security & Auth domain)
 
-## Phase 3: Visualize the "Wow" Factor (The HTML Report)
+---
 
-1. Open Finder and navigate to the `demo_reports` folder you just generated.
-2. Double click `agent-review-report.html` to open it in your web browser.
-3. **Verify the UI:**
-   - Check the **Semantic Nodes** column on the left. It should list your agents and the constraints extracted from the markdown.
-   - Check the **Conflict Hotspots** column on the right. You should see a bright red contradiction box explicitly flagging that the "Always ask for permission" rule conflicts with the "Never ask for permission" rule!
+## Phase 2: Basic Run (Verify Graph Generation Works Offline)
 
-## Phase 4: Run the CI/CD Pipeline Gatekeeper (The Failure Path)
+Temporarily unset the API key to verify the graph generates without Jev:
 
-This is the killer feature for enterprise teams. We want to prove that the CLI will crash a GitHub Action if it detects a contradiction.
+```bash
+unset TYPESAFE_API_KEY
+agent-review ./demo_workspace --output-dir ./demo_reports
+```
 
-1. Run the CLI again, but this time add the strict CI flag:
-   ```bash
-   agent-review ./demo_workspace --output-dir ./demo_reports --fail-on-contradiction
-   ```
-2. **Verify the Crash:** 
-   - Check the terminal output. It should print `[ERROR] CRITICAL CONTRADICTIONS DETECTED. Failing CI check.`
-   - In terminal, type `echo $?` immediately after the command finishes. It should output `1` (indicating a failure exit code).
+✅ **Expected:** The CLI completes successfully, printing a warning that it is running in local fallback mode. The `demo_reports/` directory contains `agent-review-report.html` and `knowledge_graph.json`.
+
+This confirms the Knowledge Graph is **independent of Jev** — Phase 1 always runs.
+
+---
+
+## Phase 3: Full Live Jev Run with Verbose Logging
+
+Re-export the API key and run with full verbose debugging:
+
+```bash
+export TYPESAFE_API_KEY="jev_sk_..."
+agent-review ./demo_workspace --output-dir ./demo_reports --threshold 0.8 --verbose
+```
+
+✅ **Expected terminal output (in order):**
+
+1. `[INFO] Discovered 4 markdown files in directory.`
+2. `[DEBUG] [JEV] Sending constraint extraction payload for: ...` — Jev classifying each text chunk.
+3. `[DEBUG] [JEV] Extraction result: Actionable Constraint, Domain: Web Search & Research` — Domain tag assigned.
+4. `[DEBUG] [JEV] Sending Batch Evaluation for X pairs...` — Adaptive batching in action.
+5. `[DEBUG] [JEV] Batch Pair 0 Contradiction Score returned: 0.93` — Jev severity score.
+6. `[INFO] Report generated: demo_reports/agent-review-report.html`
+
+---
+
+## Phase 4: Verify Domain Tagging (O(1) Pre-Filtering)
+
+Inspect the generated `knowledge_graph.json` to confirm domain tags were assigned correctly:
+
+```bash
+cat demo_reports/knowledge_graph.json | python3 -m json.tool | grep domain_tag
+```
+
+✅ **Expected:** Each constraint node has a `domain_tag` field (e.g., `"Web Search & Research"`, `"Security & Auth"`).
+
+Confirm the CLI only compared same-domain constraints by checking the verbose logs. You should NOT see `Billing & Finance` constraints being compared against `Web Search & Research` constraints.
+
+---
+
+## Phase 5: Verify Adaptive Batching (Self-Healing)
+
+Temporarily simulate rate-limit pressure by running with an intentionally very low semaphore. You can also do this by watching the verbose logs — if a 429 occurs:
+
+✅ **Expected log output when a batch fails:**
+```
+[WARNING] [JEV] Batch of 10 failed (Rate Limit/Error). Splitting into 5 and retrying...
+```
+The CLI will continue without crashing, splitting the batch recursively until all pairs are evaluated.
+
+---
+
+## Phase 6: Configurable Sensitivity Threshold
+
+Run with a low threshold to see maximum contradictions surfaced:
+
+```bash
+agent-review ./demo_workspace --output-dir ./demo_reports --threshold 0.0 --verbose
+```
+
+Then run with a high threshold to filter out everything except the most severe conflicts:
+
+```bash
+agent-review ./demo_workspace --output-dir ./demo_reports --threshold 0.9 --verbose
+```
+
+✅ **Expected:** The HTML report's "Conflict Hotspots" section has significantly more/fewer entries depending on the threshold.
+
+---
+
+## Phase 7: CI/CD Gatekeeper (The Failure Path)
+
+This is the killer enterprise feature — failing a pipeline when contradictions are found.
+
+```bash
+agent-review ./demo_workspace --output-dir ./demo_reports --fail-on-contradiction --threshold 0.8
+echo "Exit code: $?"
+```
+
+✅ **Expected:**
+- Terminal prints: `[ERROR] CRITICAL CONTRADICTIONS DETECTED. Failing CI check.`
+- `echo $?` outputs `1` — confirming a non-zero exit code that will fail any CI/CD pipeline.
+
+---
+
+## Phase 8: Verify the HTML Report
+
+Open the generated report:
+
+```bash
+open demo_reports/agent-review-report.html
+```
+
+✅ **Verify the UI:**
+- **Left column (Semantic Nodes):** Lists all 4 agents and their extracted constraints, each with a Domain Tag badge.
+- **Right column (Conflict Hotspots):** Shows red contradiction boxes between same-domain rules, with Jev severity scores.

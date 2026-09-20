@@ -1,19 +1,31 @@
 # AgentReviewGraph 🕵️‍♂️🕸️
 
-**The Ultimate Linter and Semantic Graph Inspector for AI Agents.**
+**The Ultimate Linter and Semantic Contradiction Detector for AI Agent Skills.**
 
-AgentReviewGraph is a developer-centric CLI tool that acts as a "shovel" in the AI gold rush. It parses your AI agent skill files, maps them into a strictly typed Knowledge Graph, and detects critical semantic contradictions before they reach production.
+AgentReviewGraph is a developer-centric CLI tool that acts as a policy linter for your AI agents. It parses your agent Markdown skill files, maps them into a strictly-typed **Semantic Knowledge Graph**, and uses **TypeSafe AI Jev** to detect critical contradictions before they reach production.
 
 ## Features
-- 🚀 **Intelligent AST Parsing:** Accurately extracts rules and YAML metadata while safely ignoring example code blocks.
-- ⚡ **O(N²) Clustering Engine:** Employs advanced semantic heuristics to prevent API bottlenecks when scaling to 100+ agents.
-- 🛑 **CI/CD Gatekeeper:** Fails your pipeline (`exit 1`) if two agents are given conflicting instructions.
-- 📊 **Visual Flamegraph:** Generates a stunning, interactive HTML dashboard to visualize conflict hotspots.
-- 🤖 **Orchestrator Ready:** Exports a `knowledge_graph.json` that your master routing agent can ingest dynamically.
-- **TypeSafe AI Integration**: Uses the Jev System One engine to parse, map, and rigorously cross-reference agent rules.
-- **Configurable Sensitivity**: Tune the contradiction threshold using the `--threshold` flag (0.0 to 1.0).
-- **Adaptive API Batching**: Dynamically chunks requests and recursively scales down batch sizes (Self-Healing) under rate-limit pressure to guarantee maximum throughput.
-- **Educational UI Report**: Generates a sleek, interactive HTML dashboard highlighting raw skills and Jev-evaluated conflicts.
+
+| Feature | Description |
+|---|---|
+| 🕸️ **Semantic Knowledge Graph** | Parses agent skills into a typed graph of Skill Nodes and Constraint Edges. Graph generation is fully independent of Jev — it works offline too. |
+| 🧠 **Jev-Powered Contradiction Detection** | Uses TypeSafe AI's Jev System One engine to semantically evaluate constraints and flag conflicts with a severity score (0.0–1.0). |
+| 🏷️ **Canonical Domain Tagging** | Jev tags every constraint with a Domain (e.g., `Security & Auth`, `Billing & Finance`). Only same-domain constraints are compared, eliminating millions of wasteful API calls at scale. |
+| ⚡ **Adaptive Batch Requests** | Batches up to 10 constraint pairs into a single Jev request. If a batch fails with a 429, the engine recursively splits the batch in half and retries — self-healing under load. |
+| 📊 **Interactive HTML Report** | Generates a stunning flamegraph dashboard highlighting all discovered conflict hotspots with Jev severity scores. |
+| 🛑 **CI/CD Gatekeeper** | Fails your pipeline (`exit 1`) if critical contradictions are found. |
+| 🤖 **Orchestrator Ready** | Exports a `knowledge_graph.json` that your master routing agent can ingest dynamically. |
+| 🔌 **Offline Fallback** | If no API key is present, the tool falls back to fast local heuristics so you can still test your pipelines. |
+
+## How the Knowledge Graph Works
+
+The graph is built in **two independent phases**:
+
+1. **Phase 1 — Structural Graph (Pure Python, no Jev required):**
+   The parser reads every Markdown skill file and immediately builds a graph of `SkillNode` and `ConstraintEdge` objects. This skeleton graph is always generated.
+
+2. **Phase 2 — Semantic Enrichment (Jev powered):**
+   Jev enriches the graph by: (a) tagging each constraint with a Domain using `Choice`, (b) batching same-domain pairs and scoring their contradiction severity using `Score`, (c) drawing red `Contradiction Edges` on the graph for any pair exceeding the threshold.
 
 ## Installation
 
@@ -21,43 +33,50 @@ AgentReviewGraph is a developer-centric CLI tool that acts as a "shovel" in the 
 pip install agent-review-graph
 ```
 
-## Usage (Local)
-
-Run the CLI against any markdown file or plugin directory:
+## Usage
 
 ```bash
-agent-review /path/to/skills --output-dir ./reports --threshold 0.8 --verbose
-```
+# Basic run (uses local heuristic fallback if no API key)
+agent-review ./skills --output-dir ./reports
 
-### Advanced Usage
+# Full live Jev run with configurable sensitivity
+agent-review ./skills --output-dir ./reports --threshold 0.8 --verbose
 
-```bash
-# Fail a CI/CD pipeline if critical contradictions are found
-agent-review ./agent_skills --fail-on-contradiction --threshold 0.9
-
-# Run with verbose debugging to see exact Jev payloads and scores
-agent-review ./agent_skills --verbose
+# CI/CD strict mode — fails the pipeline if contradictions are found
+agent-review ./skills --output-dir ./reports --fail-on-contradiction --threshold 0.9
 ```
 
 ## Live TypeSafe AI Integration
 
-AgentReviewGraph is powered by the **TypeSafe AI Jev** engine (a fast System One model designed for deterministic classification).
+Export your API key to unlock full semantic analysis:
 
-To unlock live semantic routing and contradiction detection, export your API key (and an optional Base URL if you are using a mock/Vercel instance):
 ```bash
 export TYPESAFE_API_KEY="jev_sk_..."
-export TYPESAFE_BASE_URL="https://your-vercel-mock.vercel.app" # Optional
-agent-review ./my-agent-skills/ --fail-on-contradiction
+export TYPESAFE_BASE_URL="https://your-vercel-gateway.vercel.app"  # Optional
+
+agent-review ./skills --output-dir ./reports --threshold 0.8 --verbose
 ```
 
-*Note: If no API key is detected or the `typesafe` SDK is not installed, the tool safely falls back to a fast local string-matching heuristic so you can still test your CI/CD pipelines!*
+## CLI Reference
+
+| Flag | Description | Default |
+|---|---|---|
+| `target` | Path to a skill file or directory | Required |
+| `--output-dir` | Directory for the HTML report and JSON graph | `./reports` |
+| `--threshold` | Contradiction severity threshold (0.0–1.0). Lower = more sensitive. | `0.0` |
+| `--fail-on-contradiction` | Exit with code 1 if any contradiction is found | `false` |
+| `--verbose` | Enable debug logging for every Jev payload and response | `false` |
+
+## Scalability: O(1) Domain Pre-Filtering
+
+Without pre-filtering, comparing N rules requires O(N²) Jev API calls. For an enterprise with 2,500 rules, that is over 3 million comparisons!
+
+**Domain Tagging solves this:** Jev tags each constraint at extraction time with a predefined domain (e.g., `Security & Auth`). The engine then uses an O(1) dictionary lookup to only compare constraints sharing the exact same domain, reducing comparisons by over 90%.
 
 ## Usage (GitHub Action)
 
-Drop AgentReviewGraph directly into your CI/CD pipeline to block pull requests that break agent constraints!
-
 ```yaml
-name: Agent Linter
+name: Agent Policy Linter
 on: [pull_request]
 
 jobs:
@@ -65,11 +84,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Run AgentReviewGraph
         uses: agent-review-graph/action@v1
         with:
           target: './skills'
+          threshold: '0.8'
           fail_on_contradiction: 'true'
           output_dir: './reports'
+        env:
+          TYPESAFE_API_KEY: ${{ secrets.TYPESAFE_API_KEY }}
 ```
