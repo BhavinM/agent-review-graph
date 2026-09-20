@@ -34,3 +34,4 @@ reports/
 htmlcov/
 
 __pycache__/
+brag-output/
