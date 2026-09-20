@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AgentReviewGraph Report</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { background-color: #0f172a; color: #f8fafc; font-family: ui-sans-serif, system-ui, sans-serif; }
+        .node-skill { border-color: #10b981; }
+        .node-constraint { border-color: #6366f1; }
+        .edge-contradicts { background-color: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.5); }
+    </style>
+</head>
+<body class="p-8">
+    <div class="max-w-7xl mx-auto">
+        <header class="mb-8 border-b border-slate-700 pb-4 flex justify-between items-center">
+            <div>
+                <h1 class="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-emerald-400 to-cyan-400">AgentReviewGraph</h1>
+                <p class="text-slate-400 mt-2">Semantic Linter & Knowledge Graph Inspector (Powered by TypeSafe AI)</p>
+            </div>
+            <div class="text-right">
+                <span class="inline-flex items-center px-4 py-2 rounded-full text-sm font-bold shadow-lg {% if knowledge_graph.has_contradictions %}bg-red-500/20 text-red-400 border border-red-500/50{% else %}bg-emerald-500/20 text-emerald-400 border border-emerald-500/50{% endif %}">
+                    {% if knowledge_graph.has_contradictions %}⚠️ Critical Contradictions Found{% else %}✅ All Clear{% endif %}
+                </span>
+            </div>
+        </header>
+
+        <main class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <!-- Left: Semantic Nodes (Grouped by Skill) -->
+            <div class="bg-slate-800/80 rounded-xl p-6 border border-slate-700 shadow-xl">
+                <h2 class="text-xl font-semibold mb-6 text-slate-200 border-b border-slate-700 pb-2">1. Parsed from Markdown</h2>
+                <div class="space-y-6">
+                    {% for skill in knowledge_graph.nodes if skill.type == 'skill' %}
+                    <div class="p-5 rounded-lg border-l-4 bg-slate-900/50 node-skill shadow-md">
+                        <div class="flex justify-between items-center mb-2">
+                            <h3 class="text-lg font-bold text-emerald-400 flex items-center gap-2">
+                                📄 {{ skill.get('name', skill.id) }}
+                            </h3>
+                            <span class="text-xs font-mono uppercase tracking-wider text-emerald-500/70 bg-emerald-500/10 px-2 py-1 rounded">Agent Skill</span>
+                        </div>
+                        <p class="text-sm text-slate-400 mb-4">{{ skill.get('description', '') }}</p>
+                        
+                        <!-- Extracted Constraints -->
+                        <div class="space-y-3 mt-4 pl-4 border-l border-slate-700">
+                            {% for const in knowledge_graph.nodes if const.type == 'constraint' and const.id.startswith('const_node_' + skill.name) %}
+                            <div class="p-4 rounded-md border-l-2 bg-slate-800 node-constraint">
+                                <div class="flex justify-between items-start mb-2">
+                                    <span class="text-[10px] uppercase font-bold tracking-widest text-indigo-400 bg-indigo-500/10 px-2 py-1 rounded flex items-center gap-1">
+                                        🧠 Extracted by Jev System One
+                                    </span>
+                                </div>
+                                <p class="text-sm text-slate-300">{{ const.get('rule', '') }}</p>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Right: Contradictions (Evaluated by Jev) -->
+            <div class="bg-slate-800/80 rounded-xl p-6 border border-slate-700 shadow-xl h-fit sticky top-8">
+                <h2 class="text-xl font-semibold mb-6 text-slate-200 border-b border-slate-700 pb-2">2. Evaluated by Jev System One</h2>
+                <div class="space-y-4">
+                    {% set has_conflicts = false %}
+                    {% for e in knowledge_graph.edges %}
+                        {% if e.type == 'contradicts' %}
+                            {% set has_conflicts = true %}
+                            <div class="p-5 rounded-lg edge-contradicts shadow-lg">
+                                <div class="flex justify-between items-center mb-3">
+                                    <h4 class="font-bold text-red-400 text-md flex items-center gap-2">
+                                        ❌ Contradiction Detected
+                                    </h4>
+                                    <span class="bg-red-900/60 text-red-200 px-3 py-1 rounded-full text-xs font-bold border border-red-500/30">
+                                        Jev Severity: {{ (e.severity * 100) | round(1) }} / 100
+                                    </span>
+                                </div>
+                                <div class="bg-slate-900/80 p-3 rounded text-sm text-slate-300 font-mono mb-3 border border-slate-700">
+                                    <span class="text-red-400">Rule A:</span> {{ e.source_id }}<br/>
+                                    <span class="text-red-400 mt-1 block">Rule B:</span> {{ e.target_id }}
+                                </div>
+                                <p class="text-xs text-red-300 bg-red-950/50 p-3 rounded italic">
+                                    "{{ e.reason }}" - Evaluated natively via TypeSafe AI.
+                                </p>
+                            </div>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if not knowledge_graph.has_contradictions %}
+                        <div class="p-6 text-center border border-dashed border-emerald-500/30 rounded-lg bg-emerald-500/5">
+                            <p class="text-emerald-400 font-medium">Jev System One evaluated all constraints.</p>
+                            <p class="text-slate-400 text-sm mt-1">No semantic conflicts detected.</p>
+                        </div>
+                    {% endif %}
+                </div>
+                <div class="mt-8 pt-4 border-t border-slate-700">
+                    <p class="text-xs text-slate-500 mb-2">Knowledge Graph JSON exported to:</p>
+                    <code class="text-xs text-cyan-400 bg-slate-900 p-2 rounded block break-all font-mono">./knowledge_graph.json</code>
+                </div>
+            </div>
+        </main>
+    </div>
+</body>
+</html>

@@ -1,0 +1,35 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "agent-review-graph"
+version = "0.1.0"
+description = "AI Linter & Graph Inspector for Agent Skill files using Jev."
+readme = "README.md"
+authors = [{name = "Bhavin Mistry"}]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Topic :: Software Development :: Testing",
+]
+dependencies = [
+    "pydantic",
+    "pyyaml",
+    "markdown-it-py",
+    "jinja2",
+    "typesafe-sdk>=0.7.0"
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "pytest-asyncio"
+]
+
+[project.scripts]
+agent-review = "agent_review_graph.cli:main"
+
+[tool.setuptools]
+packages = ["agent_review_graph"]

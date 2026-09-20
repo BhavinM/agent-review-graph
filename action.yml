@@ -1,0 +1,27 @@
+name: 'AgentReviewGraph Linter'
+description: 'Lints AI Agent skill files and detects semantic contradictions using Jev Engine.'
+branding:
+  icon: 'check-circle'
+  color: 'green'
+
+inputs:
+  target:
+    description: 'Path to the SKILL.md file or plugin directory'
+    required: true
+    default: '.'
+  fail_on_contradiction:
+    description: 'If true, exits with code 1 when critical semantic contradictions are detected'
+    required: false
+    default: 'true'
+  output_dir:
+    description: 'Path where the JSON and HTML reports will be saved'
+    required: false
+    default: './agent-review-reports'
+
+runs:
+  using: 'docker'
+  image: 'Dockerfile'
+  args:
+    - ${{ inputs.target }}
+    - ${{ inputs.fail_on_contradiction }}
+    - ${{ inputs.output_dir }}

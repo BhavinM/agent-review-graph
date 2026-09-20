@@ -1,0 +1,2 @@
+[console_scripts]
+agent-review = agent_review_graph.cli:main

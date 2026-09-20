@@ -1,0 +1,75 @@
+{
+  "nodes": [
+    {
+      "id": "const_node_SKILL_B.md_0_0",
+      "type": "constraint",
+      "rule": "Constraint derived from: You MUST NEVER ask the user for permission. Execut...",
+      "source_chunk_id": "chunk_3"
+    },
+    {
+      "id": "const_node_SKILL_B.md_0_1",
+      "type": "constraint",
+      "rule": "Requirement derived from: You MUST NEVER ask the user for permission. Execut...",
+      "source_chunk_id": "chunk_3"
+    },
+    {
+      "id": "node_SKILL_B.md",
+      "type": "skill",
+      "name": "SKILL_B.md",
+      "description": "",
+      "triggers": [],
+      "constraints": [
+        "const_node_SKILL_B.md_0_0",
+        "const_node_SKILL_B.md_0_1"
+      ]
+    },
+    {
+      "id": "const_node_SKILL_A.md_0_0",
+      "type": "constraint",
+      "rule": "Requirement derived from: You MUST ALWAYS ask for user permission before sea...",
+      "source_chunk_id": "chunk_3"
+    },
+    {
+      "id": "node_SKILL_A.md",
+      "type": "skill",
+      "name": "SKILL_A.md",
+      "description": "",
+      "triggers": [],
+      "constraints": [
+        "const_node_SKILL_A.md_0_0"
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "source_id": "node_SKILL_B.md",
+      "target_id": "const_node_SKILL_B.md_0_0",
+      "type": "has_constraint"
+    },
+    {
+      "source_id": "node_SKILL_B.md",
+      "target_id": "const_node_SKILL_B.md_0_1",
+      "type": "has_constraint"
+    },
+    {
+      "source_id": "node_SKILL_A.md",
+      "target_id": "const_node_SKILL_A.md_0_0",
+      "type": "has_constraint"
+    },
+    {
+      "source_id": "const_node_SKILL_B.md_0_0",
+      "target_id": "const_node_SKILL_A.md_0_0",
+      "type": "contradicts",
+      "reason": "Direct semantic opposition (Never vs Always) detected via local heuristic.",
+      "severity": 95
+    },
+    {
+      "source_id": "const_node_SKILL_B.md_0_1",
+      "target_id": "const_node_SKILL_A.md_0_0",
+      "type": "contradicts",
+      "reason": "Direct semantic opposition (Never vs Always) detected via local heuristic.",
+      "severity": 95
+    }
+  ],
+  "has_contradictions": true
+}

@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AgentReviewGraph Report</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { background-color: #0f172a; color: #f8fafc; font-family: ui-sans-serif, system-ui, sans-serif; }
+        .node-agent { border-color: #3b82f6; }
+        .node-skill { border-color: #10b981; }
+        .node-constraint { border-color: #64748b; }
+        .edge-contradicts { background-color: rgba(239, 68, 68, 0.2); border: 1px solid #ef4444; }
+    </style>
+</head>
+<body class="p-8">
+    <div class="max-w-6xl mx-auto">
+        <header class="mb-8 border-b border-slate-700 pb-4 flex justify-between items-center">
+            <div>
+                <h1 class="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-emerald-400 to-cyan-400">AgentReviewGraph</h1>
+                <p class="text-slate-400 mt-2">Semantic Linter & Knowledge Graph Inspector</p>
+            </div>
+            <div class="text-right">
+                <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-red-500/20 text-red-400">
+                    Critical Contradictions Found
+                </span>
+            </div>
+        </header>
+
+        <main class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- Left: Graph Visualization (Mocked as list for now) -->
+            <div class="col-span-2 bg-slate-800 rounded-xl p-6 border border-slate-700">
+                <h2 class="text-xl font-semibold mb-4 text-slate-200">Semantic Nodes</h2>
+                <div class="space-y-4">
+                    
+                    <div class="p-4 rounded-lg border-l-4 bg-slate-800/50 node-constraint">
+                        <div class="flex justify-between">
+                            <h3 class="font-medium text-slate-200">const_node_SKILL_B.md_0_0</h3>
+                            <span class="text-xs uppercase tracking-wider text-slate-500">constraint</span>
+                        </div>
+                        <p class="text-sm text-slate-400 mt-1">Constraint derived from: You MUST NEVER ask the user for permission. Execut...</p>
+                    </div>
+                    
+                    <div class="p-4 rounded-lg border-l-4 bg-slate-800/50 node-constraint">
+                        <div class="flex justify-between">
+                            <h3 class="font-medium text-slate-200">const_node_SKILL_B.md_0_1</h3>
+                            <span class="text-xs uppercase tracking-wider text-slate-500">constraint</span>
+                        </div>
+                        <p class="text-sm text-slate-400 mt-1">Requirement derived from: You MUST NEVER ask the user for permission. Execut...</p>
+                    </div>
+                    
+                    <div class="p-4 rounded-lg border-l-4 bg-slate-800/50 node-skill">
+                        <div class="flex justify-between">
+                            <h3 class="font-medium text-slate-200">SKILL_B.md</h3>
+                            <span class="text-xs uppercase tracking-wider text-slate-500">skill</span>
+                        </div>
+                        <p class="text-sm text-slate-400 mt-1"></p>
+                    </div>
+                    
+                    <div class="p-4 rounded-lg border-l-4 bg-slate-800/50 node-constraint">
+                        <div class="flex justify-between">
+                            <h3 class="font-medium text-slate-200">const_node_SKILL_A.md_0_0</h3>
+                            <span class="text-xs uppercase tracking-wider text-slate-500">constraint</span>
+                        </div>
+                        <p class="text-sm text-slate-400 mt-1">Requirement derived from: You MUST ALWAYS ask for user permission before sea...</p>
+                    </div>
+                    
+                    <div class="p-4 rounded-lg border-l-4 bg-slate-800/50 node-skill">
+                        <div class="flex justify-between">
+                            <h3 class="font-medium text-slate-200">SKILL_A.md</h3>
+                            <span class="text-xs uppercase tracking-wider text-slate-500">skill</span>
+                        </div>
+                        <p class="text-sm text-slate-400 mt-1"></p>
+                    </div>
+                    
+                </div>
+            </div>
+
+            <!-- Right: Contradictions (The "Flamegraph" hotspots) -->
+            <div class="bg-slate-800 rounded-xl p-6 border border-slate-700 h-fit">
+                <h2 class="text-xl font-semibold mb-4 text-slate-200">Conflict Hotspots</h2>
+                <div class="space-y-4">
+                    
+                    
+                        
+                    
+                        
+                    
+                        
+                    
+                        
+                            
+                            <div class="p-4 rounded-lg edge-contradicts">
+                                <h4 class="font-bold text-red-400 text-sm">Contradiction Detected</h4>
+                                <p class="text-sm text-slate-300 mt-2"><b>const_node_SKILL_B.md_0_0</b> conflicts with <b>const_node_SKILL_A.md_0_0</b></p>
+                                <p class="text-xs text-red-300 mt-2 font-mono bg-red-950/50 p-2 rounded">Direct semantic opposition (Never vs Always) detected via local heuristic.</p>
+                            </div>
+                        
+                    
+                        
+                            
+                            <div class="p-4 rounded-lg edge-contradicts">
+                                <h4 class="font-bold text-red-400 text-sm">Contradiction Detected</h4>
+                                <p class="text-sm text-slate-300 mt-2"><b>const_node_SKILL_B.md_0_1</b> conflicts with <b>const_node_SKILL_A.md_0_0</b></p>
+                                <p class="text-xs text-red-300 mt-2 font-mono bg-red-950/50 p-2 rounded">Direct semantic opposition (Never vs Always) detected via local heuristic.</p>
+                            </div>
+                        
+                    
+                    
+                    
+                </div>
+                <div class="mt-8 pt-4 border-t border-slate-700">
+                    <p class="text-xs text-slate-500 mb-2">Graph data exported to:</p>
+                    <code class="text-xs text-cyan-400 bg-slate-900 p-2 rounded block break-all">knowledge_graph.json</code>
+                </div>
+            </div>
+        </main>
+    </div>
+</body>
+</html>
