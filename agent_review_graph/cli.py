@@ -23,8 +23,12 @@ def main():
     args = parser.parse_args()
     
     if args.verbose:
-        logger.setLevel(logging.DEBUG)
-        logging.getLogger().setLevel(logging.DEBUG)
+        # Only set DEBUG on our own loggers — not the root logger
+        # Setting the root logger to DEBUG leaks verbose output from third-party
+        # libraries (e.g. markdown-it parser internals, httpx request traces)
+        logging.getLogger("AgentReviewGraph").setLevel(logging.DEBUG)
+        logging.getLogger("AgentReviewGraph.Evaluator").setLevel(logging.DEBUG)
+        logging.getLogger("AgentReviewGraph.Parser").setLevel(logging.DEBUG)
     
     target_path = Path(args.target)
     if not target_path.exists():
